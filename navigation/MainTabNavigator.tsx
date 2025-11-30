@@ -1,14 +1,15 @@
-import React from "react";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Feather } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import { Platform, StyleSheet } from "react-native";
+import { Colors, Spacing } from "@/constants/theme";
+import { useTheme } from "@/hooks/useTheme";
 import HomeStackNavigator from "@/navigation/HomeStackNavigator";
-import SearchScreen from "@/screens/SearchScreen";
 import DownloadsScreen from "@/screens/DownloadsScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
-import { useTheme } from "@/hooks/useTheme";
-import { Colors, Spacing } from "@/constants/theme";
+import SearchScreen from "@/screens/SearchScreen";
+import { Feather } from "@expo/vector-icons";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { BlurView } from "expo-blur";
+import React from "react";
+import { Platform, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type MainTabParamList = {
   HomeTab: undefined;
@@ -21,6 +22,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabNavigator() {
   const { theme, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -37,8 +39,12 @@ export default function MainTabNavigator() {
           }),
           borderTopWidth: 0,
           elevation: 0,
-          height: Spacing.tabBarHeight + (Platform.OS === "ios" ? 20 : 0),
-          paddingBottom: Platform.OS === "ios" ? 20 : Spacing.sm,
+          height: Spacing.tabBarHeight + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : Spacing.sm,
+          paddingTop: Spacing.sm,
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          marginBottom: Platform.OS === 'android' ? -Spacing.sm : 0,
           paddingTop: Spacing.sm,
         },
         tabBarBackground: () =>
