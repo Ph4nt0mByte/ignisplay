@@ -1,10 +1,11 @@
 import { HeaderActions, HeaderTitle } from "@/components/HeaderTitle";
 import { Colors } from "@/constants/theme";
 import { useTheme } from "@/hooks/useTheme";
-import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
+import BrowseScreen from "@/screens/BrowseScreen";
 import DetailScreen from "@/screens/DetailScreen";
 import HomeScreen from "@/screens/HomeScreen";
+import type { MainTabParamList } from "@/types/navigation";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { useNavigation } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -12,6 +13,7 @@ import React from "react";
 
 export type HomeStackParamList = {
   Home: undefined;
+  Browse: undefined;
   Detail: {
     id: string;
     title: string;
@@ -31,7 +33,7 @@ function HomeScreenWithHeader() {
 
   return (
     <HeaderActions
-      onSearchPress={() => navigation.navigate("SearchTab")}
+
       onProfilePress={() => navigation.navigate("ProfileTab")}
     />
   );
@@ -67,6 +69,17 @@ export default function HomeStackNavigator() {
         options={{
           headerTitle: "",
           headerTransparent: true,
+          headerTintColor: Colors.dark.text,
+        }}
+      />
+      <Stack.Screen
+        name="Browse"
+        component={BrowseScreen}
+        options={{
+          headerTitle: "Explore",
+          headerStyle: {
+            backgroundColor: Colors.dark.backgroundRoot,
+          },
           headerTintColor: Colors.dark.text,
         }}
       />

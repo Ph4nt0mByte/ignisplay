@@ -1,8 +1,8 @@
-import React from "react";
-import { View, StyleSheet, Image, Pressable } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
-import { Spacing, Colors } from "@/constants/theme";
+import { Colors, Spacing } from "@/constants/theme";
+import { Feather } from "@expo/vector-icons";
+import React from "react";
+import { Image, Pressable, StyleSheet, View } from "react-native";
 
 interface HeaderTitleProps {
   title: string;
@@ -29,17 +29,19 @@ interface HeaderActionsProps {
 export function HeaderActions({ onSearchPress, onProfilePress }: HeaderActionsProps) {
   return (
     <View style={styles.actions}>
-      <Pressable 
-        onPress={onSearchPress} 
-        style={({ pressed }) => [
-          styles.actionButton,
-          { opacity: pressed ? 0.7 : 1 }
-        ]}
-        hitSlop={8}
-      >
-        <Feather name="search" size={24} color={Colors.dark.text} />
-      </Pressable>
-      <Pressable 
+      {onSearchPress && (
+        <Pressable
+          onPress={onSearchPress}
+          style={({ pressed }) => [
+            styles.actionButton,
+            { opacity: pressed ? 0.7 : 1 }
+          ]}
+          hitSlop={8}
+        >
+          <Feather name="search" size={24} color={Colors.dark.text} />
+        </Pressable>
+      )}
+      <Pressable
         onPress={onProfilePress}
         style={({ pressed }) => [
           styles.profileButton,

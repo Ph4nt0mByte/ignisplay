@@ -1,23 +1,22 @@
-import React, { useState, useEffect, useRef } from "react";
+import { ThemedText } from "@/components/ThemedText";
+import { BorderRadius, Colors, Spacing } from "@/constants/theme";
+import type { HomeStackParamList } from "@/navigation/HomeStackNavigator";
+import { Movie, getActionMovies, getComedyMovies, getDramaMovies, getNewReleases, getTopMovies, getTrendingMovies } from "@/src/utils/movieUtils";
+import { Feather } from "@expo/vector-icons";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  StyleSheet,
-  View,
-  ScrollView,
-  Image,
-  Pressable,
   Dimensions,
   FlatList,
+  Image,
   ImageBackground,
-  Animated,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { ThemedText } from "@/components/ThemedText";
-import { Colors, Spacing, BorderRadius } from "@/constants/theme";
-import type { HomeStackParamList } from "@/navigation/HomeStackNavigator";
-import { Movie, getTopMovies, getTrendingMovies, getNewReleases } from "@/src/utils/movieUtils";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -27,41 +26,7 @@ type HomeScreenProps = {
 
 
 
-const CONTINUE_WATCHING: Movie[] = [
-  {
-    id: "continue-1",
-    title: "The Social Network",
-    posterUrl: "https://image.tmdb.org/t/p/w500/n0ybibhJtQ5icDqTp8eRytcIHJx.jpg",
-    description: "The story of the founding of Facebook and the resulting lawsuits.",
-    year: "2010",
-    rating: "7.8",
-    duration: "2h 0min",
-    progress: 0.66,
-    type: "movie",
-  },
-  {
-    id: "continue-2",
-    title: "Stranger Things",
-    posterUrl: "https://image.tmdb.org/t/p/w500/uOOtwVbSr4QDjAGIifLDwpb2Pdl.jpg",
-    description: "When a young boy disappears, his mother, a police chief and his friends must confront terrifying supernatural forces.",
-    year: "2016",
-    rating: "8.7",
-    duration: "Series",
-    progress: 0.25,
-    type: "series",
-  },
-  {
-    id: "continue-3",
-    title: "Arrival",
-    posterUrl: "https://image.tmdb.org/t/p/w500/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg",
-    description: "A linguist works with the military to communicate with alien lifeforms after twelve mysterious spacecraft appear around the world.",
-    year: "2016",
-    rating: "7.9",
-    duration: "1h 56min",
-    progress: 0.5,
-    type: "movie",
-  },
-];
+const CONTINUE_WATCHING: Movie[] = [];
 
 interface PosterCardProps {
   movie: Movie;
@@ -128,11 +93,11 @@ function ContinueWatchingCard({ movie, onPress }: ContinueWatchingCardProps) {
           </ThemedText>
           <View style={styles.progressContainer}>
             <View style={styles.progressTrack}>
-              <View 
+              <View
                 style={[
-                  styles.progressFill, 
+                  styles.progressFill,
                   { width: `${(movie.progress || 0) * 100}%` }
-                ]} 
+                ]}
               />
             </View>
           </View>
@@ -144,13 +109,25 @@ function ContinueWatchingCard({ movie, onPress }: ContinueWatchingCardProps) {
 
 interface SectionHeaderProps {
   title: string;
+  onAction?: () => void;
+  actionLabel?: string;
 }
 
-function SectionHeader({ title }: SectionHeaderProps) {
+function SectionHeader({ title, onAction, actionLabel }: SectionHeaderProps) {
   return (
-    <ThemedText type="h3" style={styles.sectionTitle}>
-      {title}
-    </ThemedText>
+    <View style={styles.sectionHeaderContainer}>
+      <ThemedText type="h3" style={styles.sectionTitle}>
+        {title}
+      </ThemedText>
+      {onAction && (
+        <Pressable onPress={onAction} style={styles.sectionActionButton}>
+          <ThemedText type="body" style={styles.sectionActionText}>
+            {actionLabel || "See All"}
+          </ThemedText>
+          <Feather name="chevron-right" size={16} color={Colors.dark.primary} />
+        </Pressable>
+      )}
+    </View>
   );
 }
 
@@ -161,23 +138,32 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [newReleaseMovies, setNewReleaseMovies] = useState<Movie[]>([]);
+  const [actionMovies, setActionMovies] = useState<Movie[]>([]);
+  const [comedyMovies, setComedyMovies] = useState<Movie[]>([]);
+  const [dramaMovies, setDramaMovies] = useState<Movie[]>([]);
 
   const flatRef = useRef<FlatList>(null);
 
   useEffect(() => {
     const fetchMovies = async () => {
-      const [top, trending, newRel] = await Promise.all([
+      const [top, trending, newRel, action, comedy, drama] = await Promise.all([
         getTopMovies(),
         getTrendingMovies(),
         getNewReleases(),
+        getActionMovies(),
+        getComedyMovies(),
+        getDramaMovies(),
       ]);
       setTopMovies(top);
       setTrendingMovies(trending);
       setNewReleaseMovies(newRel);
-      // Preload images
-      [...top, ...trending, ...newRel].forEach(movie => {
+      setActionMovies(action);
+      setComedyMovies(comedy);
+      setDramaMovies(drama);
+
+      // Preload images (subset)
+      [...top, ...trending].forEach(movie => {
         if (movie.backdropUrl) Image.prefetch(movie.backdropUrl);
-        if (movie.posterUrl) Image.prefetch(movie.posterUrl);
       });
     };
     fetchMovies();
@@ -286,7 +272,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   );
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.contentContainer, { paddingBottom: 100 + insets.bottom }]}
       showsVerticalScrollIndicator={false}
@@ -323,7 +309,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         />
       </View>
 
-      <SectionHeader title="Trending Now" />
+      <SectionHeader
+        title="Trending Now"
+        onAction={() => navigation.navigate("Browse")}
+        actionLabel="Explore All"
+      />
       <FlatList
         data={trendingMovies}
         renderItem={renderPosterItem}
@@ -334,10 +324,25 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
       />
 
-      <SectionHeader title="Continue Watching" />
+      {CONTINUE_WATCHING.length > 0 && (
+        <>
+          <SectionHeader title="Continue Watching" />
+          <FlatList
+            data={CONTINUE_WATCHING}
+            renderItem={renderContinueItem}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalList}
+            ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
+          />
+        </>
+      )}
+
+      <SectionHeader title="New Releases" />
       <FlatList
-        data={CONTINUE_WATCHING}
-        renderItem={renderContinueItem}
+        data={newReleaseMovies}
+        renderItem={renderNewReleaseItem}
         keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -345,10 +350,32 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
       />
 
-      <SectionHeader title="New Releases" />
+      <SectionHeader title="Action Movies" />
       <FlatList
-        data={newReleaseMovies}
-        renderItem={renderNewReleaseItem}
+        data={actionMovies}
+        renderItem={renderPosterItem}
+        keyExtractor={(item) => item.id}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.horizontalList}
+        ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
+      />
+
+      <SectionHeader title="Comedy Hits" />
+      <FlatList
+        data={comedyMovies}
+        renderItem={renderPosterItem}
+        keyExtractor={(item) => item.id}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.horizontalList}
+        ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
+      />
+
+      <SectionHeader title="Dramas" />
+      <FlatList
+        data={dramaMovies}
+        renderItem={renderPosterItem}
         keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -425,11 +452,27 @@ const styles = StyleSheet.create({
     color: Colors.dark.text,
     fontWeight: "700",
   },
-  sectionTitle: {
-    color: Colors.dark.text,
+
+  sectionHeaderContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.sm,
+  },
+  sectionTitle: {
+    color: Colors.dark.text,
+  },
+  sectionActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  sectionActionText: {
+    color: Colors.dark.primary,
+    fontSize: 14,
+    fontWeight: "600",
   },
   horizontalList: {
     paddingHorizontal: Spacing.lg,
