@@ -1,7 +1,7 @@
 import { ThemedText } from "@/components/ThemedText";
 import { BorderRadius, Colors, Spacing } from "@/constants/theme";
-import type { HomeStackParamList } from "@/navigation/HomeStackNavigator";
 import { getDiscoverMovies, Movie } from "@/src/utils/movieUtils";
+import type { HomeStackParamList } from "@/types/navigation";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, View } from "react-native";

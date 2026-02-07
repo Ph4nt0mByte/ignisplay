@@ -47,13 +47,13 @@ const PlaybackScreen = () => {
   );
 
   return (
-    <ScrollView 
+    <ScrollView
       style={[styles.container, { paddingTop: insets.top + Spacing.xl }]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
       <ThemedText type="h3" style={styles.title}>Playback Settings</ThemedText>
-      
+
       <View style={styles.section}>
         <ThemedText type="h4" style={styles.sectionTitle}>Playback</ThemedText>
         <SettingItem
@@ -64,7 +64,7 @@ const PlaybackScreen = () => {
             value={settings.autoPlayNext}
             onValueChange={() => toggleSetting('autoPlayNext')}
             trackColor={{ false: Colors.dark.surface, true: Colors.dark.primary }}
-            thumbColor={settings.autoPlayNext ? Colors.light.background : Colors.dark.textTertiary}
+            thumbColor={settings.autoPlayNext ? Colors.light.backgroundDefault : Colors.dark.textTertiary}
           />
         </SettingItem>
 
@@ -78,7 +78,7 @@ const PlaybackScreen = () => {
             value={settings.autoPlayTrailer}
             onValueChange={() => toggleSetting('autoPlayTrailer')}
             trackColor={{ false: Colors.dark.surface, true: Colors.dark.primary }}
-            thumbColor={settings.autoPlayTrailer ? Colors.light.background : Colors.dark.textTertiary}
+            thumbColor={settings.autoPlayTrailer ? Colors.light.backgroundDefault : Colors.dark.textTertiary}
           />
         </SettingItem>
 
@@ -92,7 +92,7 @@ const PlaybackScreen = () => {
             value={settings.autoplayPreview}
             onValueChange={() => toggleSetting('autoplayPreview')}
             trackColor={{ false: Colors.dark.surface, true: Colors.dark.primary }}
-            thumbColor={settings.autoplayPreview ? Colors.light.background : Colors.dark.textTertiary}
+            thumbColor={settings.autoplayPreview ? Colors.light.backgroundDefault : Colors.dark.textTertiary}
           />
         </SettingItem>
       </View>
@@ -130,7 +130,7 @@ const PlaybackScreen = () => {
             value={settings.dataSaver}
             onValueChange={() => toggleSetting('dataSaver')}
             trackColor={{ false: Colors.dark.surface, true: Colors.dark.primary }}
-            thumbColor={settings.dataSaver ? Colors.light.background : Colors.dark.textTertiary}
+            thumbColor={settings.dataSaver ? Colors.light.backgroundDefault : Colors.dark.textTertiary}
           />
         </SettingItem>
       </View>

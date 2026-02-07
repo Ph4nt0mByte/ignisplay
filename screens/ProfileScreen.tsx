@@ -1,5 +1,6 @@
 import { ThemedText } from "@/components/ThemedText";
 import { BorderRadius, Colors, Spacing } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { ProfileStackParamList } from "@/types/navigation";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -29,14 +30,14 @@ function SettingItem({ icon, title, onPress, showArrow = true, destructive = fal
     >
       <View style={styles.settingLeft}>
         <View style={[styles.settingIcon, destructive && styles.destructiveIcon]}>
-          <Feather 
-            name={icon} 
-            size={20} 
-            color={destructive ? Colors.dark.error : Colors.dark.text} 
+          <Feather
+            name={icon}
+            size={20}
+            color={destructive ? Colors.dark.error : Colors.dark.text}
           />
         </View>
-        <ThemedText 
-          type="body" 
+        <ThemedText
+          type="body"
           style={[styles.settingTitle, destructive && styles.destructiveText]}
         >
           {title}
@@ -52,6 +53,8 @@ function SettingItem({ icon, title, onPress, showArrow = true, destructive = fal
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<ProfileScreenNavigationProp>();
+  const { user, logout, updatePremium } = useAuth();
+  const isPremium = user?.is_premium === 1;
 
   const handleAccount = () => {
     navigation.navigate('Account');
@@ -86,8 +89,24 @@ export default function ProfileScreen() {
           text: "Log Out",
           style: "destructive",
           onPress: () => {
-            // In a real app, you would clear user data and navigate to login
-            Alert.alert("Logged Out", "You have been successfully logged out.");
+            logout();
+          }
+        }
+      ]
+    );
+  };
+
+  const handleUpgrade = () => {
+    Alert.alert(
+      "Upgrade to Premium",
+      "Get offline downloads, 4K streaming, and no ads for $9.99/month.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Subscribe",
+          onPress: () => {
+            updatePremium(true);
+            Alert.alert("Success", "Welcome to Premium!");
           }
         }
       ]
@@ -95,21 +114,62 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView 
+    <ScrollView
       style={[styles.container, { paddingTop: insets.top + Spacing.xl }]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
-      <ThemedText type="h3" style={styles.title}>Profile</ThemedText>
-      
+      <View style={styles.header}>
+        <ThemedText type="h3" style={styles.title}>Profile</ThemedText>
+      </View>
+
       <View style={styles.profileCard}>
         <View style={styles.avatar}>
-          <Feather name="user" size={32} color={Colors.dark.primary} />
+          <ThemedText type="h2" style={{ color: Colors.dark.primary }}>
+            {user?.username?.[0]?.toUpperCase() || "G"}
+          </ThemedText>
         </View>
         <View style={styles.profileInfo}>
-          <ThemedText type="h4" style={styles.profileName}>Guest User</ThemedText>
-          <ThemedText type="small" style={styles.profileEmail}>Sign in to sync your data</ThemedText>
+          <ThemedText type="h4" style={styles.profileName}>{user?.username || "Guest User"}</ThemedText>
+          <ThemedText type="small" style={styles.profileEmail}>
+            {isPremium ? "Premium Member" : "Free Plan"}
+          </ThemedText>
         </View>
+      </View>
+
+      <View style={styles.subscriptionCard}>
+        <View style={styles.subscriptionHeader}>
+          <View>
+            <ThemedText type="h4" style={styles.subscriptionTitle}>
+              {isPremium ? "Premium Plan" : "Free Plan"}
+            </ThemedText>
+            <ThemedText type="small" style={styles.subscriptionSubtitle}>
+              {isPremium ? "Next billing: Mar 01, 2026" : "Upgrade for downloads & 4K"}
+            </ThemedText>
+          </View>
+          {isPremium && <Feather name="check-circle" size={24} color={Colors.dark.primary} />}
+        </View>
+
+        {!isPremium ? (
+          <Pressable
+            onPress={handleUpgrade}
+            style={({ pressed }) => [
+              styles.upgradeButton,
+              { opacity: pressed ? 0.9 : 1 }
+            ]}
+          >
+            <ThemedText type="body" style={styles.upgradeButtonText}>Upgrade to Premium</ThemedText>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [
+              styles.manageButton,
+              { opacity: pressed ? 0.9 : 1 }
+            ]}
+          >
+            <ThemedText type="body" style={styles.manageButtonText}>Manage Subscription</ThemedText>
+          </Pressable>
+        )}
       </View>
 
 
@@ -127,10 +187,10 @@ export default function ProfileScreen() {
       </View>
 
       <View style={[styles.section, { marginBottom: 120 }]}>
-        <SettingItem 
-          icon="log-out" 
-          title="Log Out" 
-          onPress={handleLogout} 
+        <SettingItem
+          icon="log-out"
+          title="Log Out"
+          onPress={handleLogout}
           showArrow={false}
           destructive
         />
@@ -218,5 +278,53 @@ const styles = StyleSheet.create({
   },
   destructiveText: {
     color: Colors.dark.error,
+  },
+  header: {
+    marginBottom: Spacing.xl,
+  },
+  subscriptionCard: {
+    backgroundColor: Colors.dark.backgroundDefault,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.xl,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  subscriptionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: Spacing.md,
+  },
+  subscriptionTitle: {
+    color: Colors.dark.text,
+    marginBottom: Spacing.xs,
+  },
+  subscriptionSubtitle: {
+    color: Colors.dark.textTertiary,
+  },
+  upgradeButton: {
+    backgroundColor: Colors.dark.primary,
+    borderRadius: BorderRadius.md,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  upgradeButtonText: {
+    color: Colors.dark.text,
+    fontWeight: "600",
+  },
+  manageButton: {
+    backgroundColor: Colors.dark.surface,
+    borderRadius: BorderRadius.md,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.dark.backgroundSecondary,
+  },
+  manageButtonText: {
+    color: Colors.dark.text,
+    fontWeight: "600",
   },
 });

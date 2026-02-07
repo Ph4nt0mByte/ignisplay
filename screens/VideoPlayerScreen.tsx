@@ -1,3 +1,5 @@
+import { useAuth } from "@/context/AuthContext";
+import { addToHistory } from "@/services/db";
 import type { RootStackParamList } from "@/types/navigation";
 import { Feather } from "@expo/vector-icons";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
@@ -18,39 +20,42 @@ export default function VideoPlayerScreen() {
     const route = useRoute<RouteProp<RootStackParamList, "VideoPlayer">>();
     const insets = useSafeAreaInsets();
 
-    // Default to 'movie' if not specified, but usually it should be.
-    const { id, type } = route.params || {};
+    const { user } = useAuth();
+    const { id, type, title, posterUrl } = route.params || {};
 
     const getVidsrcUrl = () => {
-        // If an ID is provided, use Vidsrc
+        // ... existing logic ...
         if (id) {
             if (type === 'series') {
-                // Defaulting to Season 1 Episode 1 for now
-                // In a full app, you'd pass season/episode in params
                 return `https://vidsrc.xyz/embed/tv/${id}/1/1`;
             }
             return `https://vidsrc.xyz/embed/movie/${id}`;
         }
-
-        // Fallback to the passed videoUrl or a default sample if absolutely nothing exists
-        // This keeps backward compatibility if needed
-        return route.params?.videoUrl || "https://vidsrc.xyz/embed/movie/550"; // Fight Club as fallback
+        return route.params?.videoUrl || "https://vidsrc.xyz/embed/movie/550";
     };
 
     const uri = getVidsrcUrl();
 
     useEffect(() => {
+        // Add to history
+        if (user && id) {
+            addToHistory(user.id, {
+                id,
+                title: title || "Unknown Title",
+                posterUrl: posterUrl || "",
+                type
+            });
+        }
+
         // Lock to Landscape on mount
         ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
-
-        // Handle hardware back button
+        // ... existing back handler ...
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
             handleBack();
             return true;
         });
 
         return () => {
-            // Unlock orientation on unmount
             ScreenOrientation.unlockAsync();
             backHandler.remove();
         };

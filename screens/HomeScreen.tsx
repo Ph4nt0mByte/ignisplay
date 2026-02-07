@@ -1,7 +1,8 @@
 import { ThemedText } from "@/components/ThemedText";
 import { BorderRadius, Colors, Spacing } from "@/constants/theme";
-import type { HomeStackParamList } from "@/navigation/HomeStackNavigator";
+import { useAuth } from "@/context/AuthContext";
 import { Movie, getActionMovies, getComedyMovies, getDramaMovies, getNewReleases, getTopMovies, getTrendingMovies } from "@/src/utils/movieUtils";
+import type { HomeStackParamList } from "@/types/navigation";
 import { Feather } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -133,6 +134,8 @@ function SectionHeader({ title, onAction, actionLabel }: SectionHeaderProps) {
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+
 
   const [topMovies, setTopMovies] = useState<Movie[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -143,6 +146,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [dramaMovies, setDramaMovies] = useState<Movie[]>([]);
 
   const flatRef = useRef<FlatList>(null);
+  const [continueWatching, setContinueWatching] = useState<Movie[]>([]);
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -161,13 +165,31 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       setComedyMovies(comedy);
       setDramaMovies(drama);
 
+      // Fetch history for Continue Watching
+      if (user) {
+        const historyData = require('@/services/db').getUserHistory(user.id);
+        const formattedHistory = historyData.map((h: any) => ({
+          id: h.movie_id,
+          title: h.title,
+          posterUrl: h.poster_url,
+          backdropUrl: h.poster_url, // fallback
+          description: "",
+          year: "",
+          rating: "",
+          duration: "",
+          type: "movie",
+          progress: 0.5, // mock progress
+        }));
+        setContinueWatching(formattedHistory);
+      }
+
       // Preload images (subset)
       [...top, ...trending].forEach(movie => {
         if (movie.backdropUrl) Image.prefetch(movie.backdropUrl);
       });
     };
     fetchMovies();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (topMovies.length === 0) return;
@@ -324,20 +346,37 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
       />
 
-      {CONTINUE_WATCHING.length > 0 && (
-        <>
+      {continueWatching.length > 0 && (
+        <View style={{ marginBottom: Spacing.lg }}>
           <SectionHeader title="Continue Watching" />
           <FlatList
-            data={CONTINUE_WATCHING}
+            data={continueWatching}
             renderItem={renderContinueItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) => `continue-${item.id}-${index}`}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalList}
             ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
           />
-        </>
+        </View>
       )}
+
+      {continueWatching.length > 0 && (
+        <View style={{ marginBottom: Spacing.lg }}>
+          <SectionHeader title="Continue Watching" />
+          <FlatList
+            data={continueWatching}
+            renderItem={renderContinueItem}
+            keyExtractor={(item, index) => `continue-${item.id}-${index}`}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalList}
+            ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
+          />
+        </View>
+      )}
+
+
 
       <SectionHeader title="New Releases" />
       <FlatList

@@ -1,12 +1,12 @@
-
 import { ThemedText } from "@/components/ThemedText";
 import { BorderRadius, Colors, Spacing } from "@/constants/theme";
-import type { MainTabParamList } from "@/navigation/MainTabNavigator";
-import { Movie } from "@/src/utils/movieUtils";
+import { useAuth } from "@/context/AuthContext";
+import { getUserFavorites, getUserHistory, getUserWatchlist } from "@/services/db";
+import { MainTabParamList } from "@/types/navigation";
 import { Feather } from "@expo/vector-icons";
-import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
-import { useNavigation } from "@react-navigation/native";
-import React from "react";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import React, { useCallback, useState } from "react";
 import {
   Dimensions,
   FlatList,
@@ -19,145 +19,134 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const COLUMN_COUNT = 2;
-const ITEM_WIDTH = (SCREEN_WIDTH - Spacing.lg * 2 - Spacing.md) / COLUMN_COUNT;
-const ITEM_HEIGHT = ITEM_WIDTH * 1.5;
 
-const HISTORY: Movie[] = [];
-const FAVORITES: Movie[] = [];
-const DOWNLOADS: Movie[] = [];
-
-interface PosterCardProps {
-  movie: Movie;
-  onPress: () => void;
-  width?: number;
-}
-
-function PosterCard({ movie, onPress, width = 128 }: PosterCardProps) {
+function PosterCard({ movie, onPress, width = 120 }: { movie: any; onPress: () => void; width?: number }) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        styles.posterCard,
-        { width, opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }
+        { width, opacity: pressed ? 0.8 : 1, marginRight: Spacing.md }
       ]}
     >
       <Image
-        source={{ uri: movie.posterUrl }}
-        style={[styles.posterImage, { width, height: width * 1.5 }]}
+        source={{ uri: movie.posterUrl || movie.poster_url }}
+        style={{ width, height: width * 1.5, borderRadius: BorderRadius.sm, backgroundColor: Colors.dark.surface }}
         resizeMode="cover"
       />
-      <ThemedText type="body" style={styles.posterTitle} numberOfLines={1}>
+      <ThemedText type="small" numberOfLines={1} style={{ marginTop: Spacing.xs, color: Colors.dark.text }}>
         {movie.title}
       </ThemedText>
     </Pressable>
   );
 }
 
-function SectionHeader({ title }: { title: string }) {
+
+function CollapsibleSection({ title, data, renderItem }: { title: string; data: any[]; renderItem: any }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  if (data.length === 0) return null;
+
   return (
-    <ThemedText type="h3" style={styles.sectionTitle}>
-      {title}
-    </ThemedText>
+    <View style={styles.section}>
+      <Pressable
+        onPress={() => setCollapsed(!collapsed)}
+        style={styles.sectionHeaderButton}
+      >
+        <ThemedText type="h4" style={{ color: Colors.dark.text }}>{title}</ThemedText>
+        <Feather name={collapsed ? "chevron-down" : "chevron-up"} size={20} color={Colors.dark.text} />
+      </Pressable>
+
+      {!collapsed && (
+        <FlatList
+          data={data}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id.toString()}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
+    </View>
   );
 }
 
 export default function MyListScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const { user } = useAuth();
 
-  const navigateToDetail = (movie: Movie) => {
-    // @ts-ignore - The navigation types are a bit complex between tab/stack
-    navigation.getParent()?.navigate('HomeTab', {
+  const [history, setHistory] = useState<any[]>([]);
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [watchlist, setWatchlist] = useState<any[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        setHistory(getUserHistory(user.id));
+        setFavorites(getUserFavorites(user.id));
+        setWatchlist(getUserWatchlist(user.id));
+      }
+    }, [user])
+  );
+
+  const navigateToDetail = (item: any) => {
+    navigation.navigate('HomeTab', {
       screen: 'Detail',
       params: {
-        id: movie.id,
-        title: movie.title,
-        posterUrl: movie.backdropUrl || movie.posterUrl,
-        description: movie.description || "",
-        year: movie.year,
-        rating: movie.rating,
-        duration: movie.duration,
-        type: movie.type,
+        id: item.movie_id || item.id || "",
+        title: item.title || "Unknown",
+        posterUrl: item.poster_url || item.posterUrl || "",
+        description: item.description || "",
+        year: item.year || "",
+        rating: item.rating || "",
+        duration: item.duration || "",
+        type: item.type || "movie",
       }
     });
   };
 
-  const renderPosterItem = ({ item }: { item: Movie }) => (
-    <PosterCard
-      movie={item}
-      onPress={() => navigateToDetail(item)}
-    />
-  );
-
-  const hasContent = HISTORY.length > 0 || FAVORITES.length > 0 || DOWNLOADS.length > 0;
+  const hasContent = history.length > 0 || favorites.length > 0 || watchlist.length > 0;
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.contentContainer, { paddingBottom: 100 + insets.bottom }]}
+      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + Spacing.xl, paddingBottom: 100 }]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={[styles.header, { paddingTop: insets.top + Spacing.md }]}>
-        <ThemedText type="h3" style={styles.headerTitle}>My List</ThemedText>
+      <View style={styles.header}>
+        <ThemedText type="h1" style={styles.headerTitle}>My Library</ThemedText>
       </View>
 
       {!hasContent && (
         <View style={styles.emptyStateContainer}>
           <Feather name="bookmark" size={48} color={Colors.dark.textTertiary} />
           <ThemedText type="body" style={styles.emptyStateText}>
-            Your list is empty.
+            Your library is empty.
           </ThemedText>
           <ThemedText type="small" style={styles.emptyStateSubtext}>
-            Movies and shows you add to your list will appear here.
+            Movies you watch or add to your list will appear here.
           </ThemedText>
         </View>
       )}
 
-      {HISTORY.length > 0 && (
-        <>
-          <SectionHeader title="History" />
-          <FlatList
-            data={HISTORY}
-            renderItem={renderPosterItem}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-            ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
-          />
-        </>
-      )}
+      <CollapsibleSection
+        title="Watch Later"
+        data={watchlist}
+        renderItem={({ item }: { item: any }) => <PosterCard movie={item} onPress={() => navigateToDetail(item)} />}
+      />
 
-      {FAVORITES.length > 0 && (
-        <>
-          <SectionHeader title="Favorites" />
-          <FlatList
-            data={FAVORITES}
-            renderItem={renderPosterItem}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-            ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
-          />
-        </>
-      )}
+      <CollapsibleSection
+        title="Favorites"
+        data={favorites}
+        renderItem={({ item }: { item: any }) => <PosterCard movie={item} onPress={() => navigateToDetail(item)} />}
+      />
 
-      {DOWNLOADS.length > 0 && (
-        <>
-          <SectionHeader title="Downloads" />
-          <FlatList
-            data={DOWNLOADS}
-            renderItem={renderPosterItem}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalList}
-            ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
-          />
-        </>
-      )}
+      <CollapsibleSection
+        title="History"
+        data={history}
+        renderItem={({ item }: { item: any }) => <PosterCard movie={item} onPress={() => navigateToDetail(item)} />}
+      />
+
     </ScrollView>
   );
 }
@@ -168,54 +157,37 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.dark.backgroundRoot,
   },
   contentContainer: {
-    paddingTop: 0,
+    paddingHorizontal: Spacing.lg,
   },
   header: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
+    marginBottom: Spacing.xl,
   },
   headerTitle: {
     color: Colors.dark.text,
-    fontSize: 24,
-    fontWeight: "700",
   },
-  sectionTitle: {
-    color: Colors.dark.text,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.sm,
+  section: {
+    marginBottom: Spacing.xl,
   },
-  horizontalList: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+  sectionHeaderButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.md,
   },
-  posterCard: {
-    gap: Spacing.sm,
-  },
-  posterImage: {
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.dark.surface,
-  },
-  posterTitle: {
-    color: Colors.dark.text,
-    fontSize: 14,
-    fontWeight: "500",
+  listContent: {
+    paddingRight: Spacing.lg,
   },
   emptyStateContainer: {
-    flex: 1,
-    justifyContent: "center",
     alignItems: "center",
-    marginTop: Spacing['3xl'],
-    gap: Spacing.sm,
+    justifyContent: "center",
+    marginTop: Spacing["3xl"],
+    gap: Spacing.md,
   },
   emptyStateText: {
     color: Colors.dark.text,
-    fontSize: 16,
     fontWeight: "600",
   },
   emptyStateSubtext: {
-    color: Colors.dark.textSecondary,
-    textAlign: "center",
-    maxWidth: "70%",
+    color: Colors.dark.textTertiary,
   },
 });

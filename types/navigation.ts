@@ -1,3 +1,5 @@
+import { NavigatorScreenParams } from "@react-navigation/native";
+
 export type RootStackParamList = {
   MainTabs: undefined;
   VideoPlayer: {
@@ -5,19 +7,22 @@ export type RootStackParamList = {
     title?: string;
     id?: string;
     type?: "movie" | "series";
+    posterUrl?: string;
   };
   Account: undefined;
   Notifications: undefined;
   Playback: undefined;
   HelpCenter: undefined;
   About: undefined;
+  Login: undefined;
+  Register: undefined;
 };
 
 export type MainTabParamList = {
-  HomeTab: undefined;
+  HomeTab: NavigatorScreenParams<HomeStackParamList>;
   SearchTab: undefined;
   MyListTab: undefined;
-  ProfileTab: undefined;
+  ProfileTab: NavigatorScreenParams<ProfileStackParamList>;
 };
 
 export type HomeStackParamList = {

@@ -22,37 +22,36 @@ const ProfileStackNavigator = () => {
         headerTitleStyle: {
           fontWeight: '600',
         },
-        headerBackTitleVisible: false,
         headerShadowVisible: false,
       }}
     >
-      <Stack.Screen 
-        name="Profile" 
+      <Stack.Screen
+        name="Profile"
         component={ProfileScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen 
-        name="Account" 
+      <Stack.Screen
+        name="Account"
         component={AccountScreen}
         options={{ title: 'Account Settings' }}
       />
-      <Stack.Screen 
-        name="Notifications" 
+      <Stack.Screen
+        name="Notifications"
         component={NotificationsScreen}
         options={{ title: 'Notification Settings' }}
       />
-      <Stack.Screen 
-        name="Playback" 
+      <Stack.Screen
+        name="Playback"
         component={PlaybackScreen}
         options={{ title: 'Playback Settings' }}
       />
-      <Stack.Screen 
-        name="HelpCenter" 
+      <Stack.Screen
+        name="HelpCenter"
         component={HelpCenterScreen}
         options={{ title: 'Help Center' }}
       />
-      <Stack.Screen 
-        name="About" 
+      <Stack.Screen
+        name="About"
         component={AboutScreen}
         options={{ title: 'About' }}
       />

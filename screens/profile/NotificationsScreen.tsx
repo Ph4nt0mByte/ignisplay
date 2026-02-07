@@ -20,15 +20,15 @@ const NotificationsScreen = () => {
     });
   };
 
-  const NotificationItem = ({ 
-    title, 
-    description, 
-    value, 
-    onValueChange 
-  }: { 
-    title: string; 
-    description: string; 
-    value: boolean; 
+  const NotificationItem = ({
+    title,
+    description,
+    value,
+    onValueChange
+  }: {
+    title: string;
+    description: string;
+    value: boolean;
     onValueChange: (value: boolean) => void;
   }) => (
     <View style={styles.notificationItem}>
@@ -42,7 +42,7 @@ const NotificationsScreen = () => {
       </View>
       <Switch
         trackColor={{ false: Colors.dark.surface, true: Colors.dark.primary }}
-        thumbColor={value ? Colors.light.background : Colors.dark.textTertiary}
+        thumbColor={value ? Colors.light.backgroundDefault : Colors.dark.textTertiary}
         onValueChange={onValueChange}
         value={value}
       />
@@ -50,13 +50,13 @@ const NotificationsScreen = () => {
   );
 
   return (
-    <ScrollView 
+    <ScrollView
       style={[styles.container, { paddingTop: insets.top + Spacing.xl }]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
       <ThemedText type="h3" style={styles.title}>Notifications</ThemedText>
-      
+
       <View style={styles.section}>
         <ThemedText type="h4" style={styles.sectionTitle}>Push Notifications</ThemedText>
         <NotificationItem

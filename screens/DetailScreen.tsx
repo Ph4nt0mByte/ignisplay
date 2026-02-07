@@ -1,11 +1,13 @@
 import { ThemedText } from "@/components/ThemedText";
 import { BorderRadius, Colors, Spacing } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
+import { isFavorite, isInWatchlist, toggleFavorite, toggleWatchlist } from "@/services/db";
 import type { HomeStackParamList, RootStackParamList } from "@/types/navigation";
 import { Feather } from "@expo/vector-icons";
 import { RouteProp, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   FlatList,
@@ -109,10 +111,34 @@ export default function DetailScreen({ route }: DetailScreenProps) {
   const { id, title, posterUrl, description, year, rating, duration, type } = route.params;
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const { user } = useAuth();
+
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [inFavorites, setInFavorites] = useState(false);
+
+  useEffect(() => {
+    if (user && id) {
+      setInWatchlist(isInWatchlist(user.id, id));
+      setInFavorites(isFavorite(user.id, id));
+    }
+  }, [user, id]);
 
   const handlePlayVideo = () => {
-    navigation.navigate("VideoPlayer", { title, id, type });
+    navigation.navigate("VideoPlayer", { title, id, type, posterUrl });
+  };
+
+  const handleToggleWatchlist = () => {
+    if (user && id) {
+      const added = toggleWatchlist(user.id, { id, title, posterUrl });
+      setInWatchlist(added);
+    }
+  };
+
+  const handleToggleFavorite = () => {
+    if (user && id) {
+      const added = toggleFavorite(user.id, { id, title, posterUrl });
+      setInFavorites(added);
+    }
   };
 
   return (
@@ -134,16 +160,29 @@ export default function DetailScreen({ route }: DetailScreenProps) {
         />
         <View style={[styles.headerActions, { top: insets.top + Spacing.lg }]}>
           <Pressable
-            onPress={() => setIsBookmarked(!isBookmarked)}
+            onPress={handleToggleFavorite}
+            style={({ pressed }) => [
+              styles.bookmarkButton,
+              { opacity: pressed ? 0.7 : 1, marginRight: Spacing.sm }
+            ]}
+          >
+            <Feather
+              name="heart"
+              size={24}
+              color={inFavorites ? Colors.dark.primary : Colors.dark.text}
+            />
+          </Pressable>
+          <Pressable
+            onPress={handleToggleWatchlist}
             style={({ pressed }) => [
               styles.bookmarkButton,
               { opacity: pressed ? 0.7 : 1 }
             ]}
           >
             <Feather
-              name={isBookmarked ? "bookmark" : "bookmark"}
+              name={inWatchlist ? "check" : "plus"}
               size={24}
-              color={isBookmarked ? Colors.dark.primary : Colors.dark.text}
+              color={inWatchlist ? Colors.dark.primary : Colors.dark.text}
             />
           </Pressable>
         </View>
@@ -188,21 +227,59 @@ export default function DetailScreen({ route }: DetailScreenProps) {
             onPress={handlePlayVideo}
             style={({ pressed }) => [
               styles.playButton,
-              { opacity: pressed ? 0.9 : 1 }
+              { opacity: pressed ? 0.9 : 1, width: "100%", marginBottom: Spacing.sm }
             ]}
           >
             <Feather name="play" size={20} color={Colors.dark.text} />
             <ThemedText type="body" style={styles.playButtonText}>Play</ThemedText>
           </Pressable>
+
           <Pressable
             style={({ pressed }) => [
-              styles.downloadButton,
-              { opacity: pressed ? 0.8 : 1 }
+              styles.secondaryButton,
+              { opacity: pressed ? 0.8 : 1, width: "100%", marginBottom: Spacing.md }
             ]}
           >
             <Feather name="download" size={20} color={Colors.dark.text} />
-            <ThemedText type="body" style={styles.downloadButtonText}>Download</ThemedText>
+            <ThemedText type="body" style={styles.secondaryButtonText}>Download</ThemedText>
           </Pressable>
+
+          <View style={styles.secondaryActions}>
+            <Pressable
+              onPress={handleToggleWatchlist}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                { opacity: pressed ? 0.8 : 1, backgroundColor: inWatchlist ? Colors.dark.primary : Colors.dark.surface }
+              ]}
+            >
+              <Feather
+                name={inWatchlist ? "check" : "bookmark"}
+                size={20}
+                color={Colors.dark.text}
+              />
+              <ThemedText type="body" style={styles.secondaryButtonText}>
+                {inWatchlist ? "Saved" : "Watch Later"}
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              onPress={handleToggleFavorite}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                { opacity: pressed ? 0.8 : 1, backgroundColor: inFavorites ? Colors.dark.primary : Colors.dark.surface }
+              ]}
+            >
+              <Feather
+                name={inFavorites ? "heart" : "heart"}
+                size={20}
+                color={Colors.dark.text}
+                style={inFavorites ? {} : {}}
+              />
+              <ThemedText type="body" style={styles.secondaryButtonText}>
+                {inFavorites ? "Favorited" : "Favorite"}
+              </ThemedText>
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -282,6 +359,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: Spacing.lg,
     zIndex: 10,
+    flexDirection: 'row',
   },
   bookmarkButton: {
     width: 44,
@@ -330,11 +408,15 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   actionButtons: {
+    flexDirection: "column",
+    gap: 0,
+  },
+  secondaryActions: {
     flexDirection: "row",
     gap: Spacing.md,
+    width: "100%",
   },
   playButton: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -347,7 +429,7 @@ const styles = StyleSheet.create({
     color: Colors.dark.text,
     fontWeight: "700",
   },
-  downloadButton: {
+  secondaryButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
@@ -357,7 +439,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: BorderRadius.sm,
   },
-  downloadButtonText: {
+  secondaryButtonText: {
     color: Colors.dark.text,
     fontWeight: "600",
   },

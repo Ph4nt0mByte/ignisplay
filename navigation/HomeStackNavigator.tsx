@@ -19,7 +19,7 @@ function HomeScreenWithHeader() {
   return (
     <HeaderActions
 
-      onProfilePress={() => navigation.navigate("ProfileTab")}
+      onProfilePress={() => navigation.navigate("ProfileTab", { screen: "Profile" })}
     />
   );
 }
